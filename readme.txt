@@ -37,4 +37,6 @@ Infomax ICA implemented here might also be under a patent by the Salk Institute
 and any commercial application using this type of algorithm (or the recompiled 
 binary files distributed here) should contact the Salk Institute patent office.
 
+For more information, see also https://sccn.ucsd.edu/wiki/Binica
+
 Please help maintain this repository.
