@@ -37,6 +37,8 @@ Infomax ICA implemented here might also be under a patent by the Salk Institute
 and any commercial application using this type of algorithm (or the recompiled 
 binary files distributed here) should contact the Salk Institute patent office.
 
+See also this implementation in CUDA https://github.com/fraimondo/cudaica
+
 For more information, see also the wiki page https://github.com/sccn/binica/wiki
 
 Please help maintain this repository.
