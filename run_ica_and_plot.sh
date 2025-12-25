@@ -1,0 +1,169 @@
+#!/bin/bash
+# run_ica_and_plot.sh - Run binica ICA and plot component topographies
+# Usage: ./run_ica_and_plot.sh <dataset_basename> [n_channels] [n_timepoints]
+#
+# Example: ./run_ica_and_plot.sh ./data/eeglab_data 32 30504
+
+set -e  # Exit on error
+
+# Default parameters
+DATASET=${1:-"./data/eeglab_data"}
+NCHANS=${2:-32}
+NPOINTS=${3:-30504}
+
+# Derived paths
+DATAFILE="${DATASET}.fdt"
+SETFILE="${DATASET}.set"
+WTSFILE="${DATASET}.wts"
+SPHFILE="${DATASET}.sph"
+CONFIGFILE="${DATASET}_ica.sc"
+BASENAME=$(basename "$DATASET")
+
+echo "========================================"
+echo "Running binica ICA and plotting"
+echo "========================================"
+echo "Dataset: $DATASET"
+echo "Channels: $NCHANS"
+echo "Data points: $NPOINTS"
+echo ""
+
+# Check if data file exists
+if [ ! -f "$DATAFILE" ]; then
+    echo "Error: Data file $DATAFILE not found"
+    exit 1
+fi
+
+# Create ICA configuration file
+echo "Creating ICA configuration file..."
+cat > "$CONFIGFILE" << EOF
+# ICA configuration for $BASENAME
+DataFile       $DATAFILE
+chans          $NCHANS
+datalength     $NPOINTS
+
+WeightsOutFile $WTSFILE
+SphereFile     $SPHFILE
+
+doublewrite    on
+extended       1
+lrate          5.0e-4
+stop           1.0e-6
+maxsteps       512
+EOF
+
+echo "Configuration saved to: $CONFIGFILE"
+echo ""
+
+# Run binica ICA
+echo "Running binica ICA..."
+echo "Command: ./ica_darwin < $CONFIGFILE"
+echo ""
+
+./ica_darwin < "$CONFIGFILE"
+
+if [ $? -ne 0 ]; then
+    echo "Error: ICA failed"
+    exit 1
+fi
+
+echo ""
+echo "ICA completed successfully!"
+echo "  Weights: $WTSFILE"
+echo "  Sphere:  $SPHFILE"
+echo ""
+
+# Check if MATLAB and EEGLAB are available
+if [ ! -d "/Applications/MATLAB_R2025b.app" ]; then
+    echo "Warning: MATLAB not found at /Applications/MATLAB_R2025b.app"
+    echo "Skipping topography plotting"
+    exit 0
+fi
+
+if [ ! -f "$SETFILE" ]; then
+    echo "Warning: EEGLAB .set file not found: $SETFILE"
+    echo "Skipping topography plotting"
+    echo "To create plots, ensure $SETFILE exists"
+    exit 0
+fi
+
+# Create MATLAB script for plotting
+MATLABSCRIPT="${DATASET}_plot.m"
+DATADIR=$(cd "$(dirname "$DATASET")" && pwd)
+echo "Creating MATLAB plotting script..."
+
+cat > "$MATLABSCRIPT" << EOFMATLAB
+% Auto-generated script to plot ICA topographies
+
+addpath('~/eeglab');
+eeglab nogui;
+
+% Load dataset
+fprintf('Loading dataset...\\n');
+EEG = pop_loadset('filename', '${BASENAME}.set', 'filepath', '${DATADIR}/');
+
+% Load ICA matrices
+fprintf('Loading ICA matrices...\\n');
+wtsfile = fullfile('${DATADIR}', '${BASENAME}.wts');
+sphfile = fullfile('${DATADIR}', '${BASENAME}.sph');
+
+fid = fopen(wtsfile, 'rb');
+weights = fread(fid, [${NCHANS}, ${NCHANS}], 'float64')';
+fclose(fid);
+
+fid = fopen(sphfile, 'rb');
+sphere = fread(fid, [${NCHANS}, ${NCHANS}], 'float64')';
+fclose(fid);
+
+% Import into EEG structure
+EEG.icaweights = weights;
+EEG.icasphere = sphere;
+EEG.icawinv = pinv(weights * sphere);
+EEG.icaact = [];
+EEG = eeg_checkset(EEG);
+
+fprintf('Plotting component topographies...\\n');
+
+% Plot all components
+pop_topoplot(EEG, 0, [1:4], 'ICA Component Topographies (binica)', [], 0, 'electrodes', 'off');
+
+% Save outputs
+pngfile = fullfile('${DATADIR}', '${BASENAME}_topoplot.png');
+pdffile = fullfile('${DATADIR}', '${BASENAME}_topoplot.pdf');
+
+print(gcf, pngfile, '-dpng', '-r150');
+print(gcf, pdffile, '-dpdf', '-bestfit');
+
+EEG = pop_saveset(EEG, 'filename', '${BASENAME}_with_ica.set', ...
+    'filepath', '${DATADIR}/');
+
+fprintf('Done! Saved:\\n');
+fprintf('  %s\\n', pngfile);
+fprintf('  %s\\n', pdffile);
+fprintf('  ${DATADIR}/${BASENAME}_with_ica.set\\n');
+EOFMATLAB
+
+echo "MATLAB script saved to: $MATLABSCRIPT"
+echo ""
+
+# Run MATLAB
+echo "Running MATLAB to generate topography plots..."
+FULLPATH=$(cd "$(dirname "${MATLABSCRIPT}")" && pwd)/$(basename "${MATLABSCRIPT}")
+/Applications/MATLAB_R2025b.app/bin/matlab -batch "cd('$(pwd)'); run('${FULLPATH}')"
+
+if [ $? -eq 0 ]; then
+    echo ""
+    echo "========================================"
+    echo "All done!"
+    echo "========================================"
+    echo "Output files:"
+    echo "  ICA weights:    $WTSFILE"
+    echo "  ICA sphere:     $SPHFILE"
+    echo "  Topography PNG: ${DATASET}_topoplot.png"
+    echo "  Topography PDF: ${DATASET}_topoplot.pdf"
+    echo "  Dataset w/ICA:  $(dirname "$DATASET")/${BASENAME}_with_ica.set"
+else
+    echo "Warning: MATLAB plotting failed"
+fi
+
+# Cleanup temporary files
+rm -f "$MATLABSCRIPT"

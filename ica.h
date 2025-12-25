@@ -121,6 +121,8 @@ extern integer verbose, block, maxsteps;
 extern doublereal lrate, annealstep, annealdeg, nochange, momentum;
 
 extern void error(char*);
+extern void fb_matwrite(char*, int, doublereal*);
+extern void fb_matwrite_double(char*, int, doublereal*);
 
 extern void zero(integer, doublereal*);
 extern void eye(integer, doublereal*);

@@ -1,0 +1,30 @@
+PLAT = _darwin
+
+CC        = gcc
+CFLAGS    = -O3
+LIBS      = -framework Accelerate -lm
+OBJS      = ica.o interfc.o memap.o r250.o randlcg.o dsum.o
+
+ica_darwin: Makefile.darwin ica.h memap.h $(OBJS)
+	$(CC) -o ica_darwin $(OBJS) $(LIBS)
+
+ica.o: Makefile.darwin ica.h memap.h ica.c
+	$(CC) -c ica.c $(CFLAGS)
+
+interfc.o: Makefile.darwin ica.h memap.h interfc.c
+	$(CC) -c interfc.c $(CFLAGS)
+
+memap.o: Makefile.darwin memap.h memap.c
+	$(CC) -c memap.c $(CFLAGS)
+
+r250.o: Makefile.darwin r250.h r250.c
+	$(CC) -c r250.c $(CFLAGS)
+
+randlcg.o: Makefile.darwin randlcg.h randlcg.c
+	$(CC) -c randlcg.c $(CFLAGS)
+
+dsum.o: Makefile.darwin dsum.c
+	$(CC) -c dsum.c $(CFLAGS)
+
+clean:
+	rm -f *.o ica_darwin

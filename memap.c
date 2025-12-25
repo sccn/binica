@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <unistd.h>
 
 #ifndef ALPHA
 

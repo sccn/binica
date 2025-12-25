@@ -1,0 +1,6 @@
+.venv/
+bias_after_adjust
+ica_darwin
+old/
+*.o
+data/*

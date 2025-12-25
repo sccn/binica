@@ -47,75 +47,10 @@
 #define HELPFILE "ica.sc" /* File containing help message. */
 #define COMM "!#%\0"      /* Characters to preceed comments. */
 
-#define HELPMSG "# ica - Perform Independent Component Analysis, standalone-version
-#
-#   Run the ICA algorithm of Bell & Sejnowski (1996) or the extended-ICA 
-#   of Lee, Girolami & Sejnowski (1998). Original Matlab code: Scott Makeig,
-#   Tony Bell, et al.; C++ code: Sigurd Enghoff, CNL / Salk Institute 7/98
-#
-#   Usage:   % ica < my.sc
-#
-#   Leading # -> use default values
-#   Edit a copy of this file to run an ica decomposition
-#   Contacts: {enghoff,scott,terry,tony,tewon}@salk.edu
-
-# Required variables:
-    DataFile     berger/modeldata # Input data to decompose (floats multiplexed
-                           #   by channel (i.e., chan1, chan2, ...))
-    chans        31        # Number of data channels (= data rows) 
-    frames       768       # Number of data points per epoch (= data columns)
-    epochs       436       # Number of epochs
-
-#	FrameWindow  20        # Number of frames per window
-#	FrameStep    4         # Number of frames to step per window
-#	EpochWindow  100       # Number of epochs per window
-#	EpochStep    25        # Number of epochs to step per window
-#	Baseline     25        # Number of data points contained in baseline
-
-    WeightsOutFile berger/data.wts # Output ICA weight matrix (floats)
-    SphereFile   berger/data.sph  # Output sphering matrix (floats)
-
-# Processing options:
- 
-#   sphering     on        # Flag sphering of data (on/off)   {default: on}
-#   bias         on        # Perform bias adjustment (on/off) {default: on}
-    \exextended     1         # Perform \"extended-ICA\" using tnah() with kurtosis
-                           #  estimation every N training blocks. If N < 0,
-                           #  fix number of sub-Gaussian components to -N 
-                           #  {default|0: off}
-#   pca          0         # Decompose a principal component subspace of
-                           #  the data. Retain this many PCs. {default|0: all}
-# Optional input variables:
- 
-#  WeightsInFile input.wts # Starting ICA weight matrix (nchans,ncomps)
-                           #  {default: identity or sphering matrix}
-    lrate        2.0e-3    # Initial ICA learning rate (float << 1)
-                           #  {default: heuristic ~5e-4}
-#   blocksize    20        # ICA block size (integer << datalength) 
-                           #  {default: heuristic fraction of log data length}
-#   stop         1.0e-6    # Stop training when weight-change < this value
-                           #  {default: heuristic ~0.000001}
-    maxsteps     512       # Max. number of ICA training steps {default: 128}
-#   posact       on        # Make each component activation net-positive
-                           # (on/off) {default: on}
-#   annealstep   0.98      # Annealing factor (range (0,1]) - controls 
-                           #  the speed of convergence.
-#   annealdeg    60        # Angledelta threshold for annealing {default: 60}
-#   momentum     0.0       # Momentum gain (range [0,1])      {default: 0}
-#   verbose      off        # Give ascii messages (on/off) {default: on}
- 
-# Optional outputs:
- 
-#  ActivationsFile data.act # Activations of each component (ncomps,points)
-#  BiasFile      data.bs   # Bias weights (ncomps,1)
-#  SignFile      data.sgn  # Signs designating (-1) sub- and (1) super-Gaussian 
-                           #  components (ncomps,1)
-
-# This script, \"ica.sc\" is a sample ica script file. Copy and modify it as
-# desired. Note that the input data file(s) must be native floats."
+#define HELPMSG "# ica - Perform Independent Component Analysis, standalone-version"
 
 /* Globally defined variables */
-integer pcaflag, sphering, posactflag, biasflag;
+integer pcaflag, sphering, posactflag, biasflag, doublewrite;
 
 integer CH_NUMBER, COMP_NUMBER;
 doublereal *WW, *EE;
@@ -131,6 +66,7 @@ void initdefaults () {
 	posactflag = DEFAULT_POSACT;
 	verbose    = DEFAULT_VERBOSE;
 	biasflag   = DEFAULT_BIASFLAG;
+	doublewrite = 0;
 	
 	block      = 0;
 	lrate      = 0.0;
@@ -288,7 +224,6 @@ void fb_matread(char *fname, int size, doublereal *mat) {
 #endif
 
 	items = (int)fread(buffer,sizeof(float),size,file);
-	printf("%d\n",items);
 	if (items != size) error("invalid number of elements");
 	
 	for (i=0 ; i<size ; i++) mat[i] = (doublereal)buffer[i];
@@ -334,6 +269,27 @@ void fb_matwrite(char *fname, int size, doublereal *mat) {
 #else
 	free(buffer);
 #endif
+
+	fclose(file);
+}
+
+
+/******************* Write binary double precision file ***********************/
+/* Write size doublereal elements of mat as double precision values to the    */
+/* binary file specified by fname.                                            */
+/*                                                                            */
+/* fname: char array (input)                                                  */
+/* size:  int (input)                                                         */
+/* mat:   doublereal array [size] (input)                                     */
+
+void fb_matwrite_double(char *fname, int size, doublereal *mat) {
+	FILE *file = fopen(fname,"wb");
+	int items;
+
+	if (!file) error("open failed");
+
+	items = (int)fwrite(mat,sizeof(doublereal),size,file);
+	if (items != size) error("invalid number of elements");
 
 	fclose(file);
 }
@@ -534,6 +490,12 @@ void doit(key *keys) {
 		else if (!strcmp(keyword,"bias")) {
 			biasflag = swtch(value);
 			if (biasflag < 0) error("bias value must be on or off");
+		}
+
+/* Keyword: doublewrite */
+		else if (!strcmp(keyword,"doublewrite") || !strcmp(keyword,"precision64")) {
+			doublewrite = swtch(value);
+			if (doublewrite < 0) error("doublewrite value must be on or off");
 		}
 
 /* Keywords: extended, extend */
@@ -842,18 +804,27 @@ void doit(key *keys) {
 
 /**************************** Write results to disk ***************************/
 	if (verbose) printf("Storing weights in %s\n",weights_out_f);
-	fb_matwrite(weights_out_f,ncomps*chans,weights);
-	
+	if (doublewrite)
+		fb_matwrite_double(weights_out_f,ncomps*chans,weights);
+	else
+		fb_matwrite(weights_out_f,ncomps*chans,weights);
+
 	if (act_f!=NULL) {
 		if (verbose) printf("Storing activations in %s\n",act_f);
-		fb_matwrite(act_f,ncomps*datalength,dataA);
+		if (doublewrite)
+			fb_matwrite_double(act_f,ncomps*datalength,dataA);
+		else
+			fb_matwrite(act_f,ncomps*datalength,dataA);
 	}
-	
+
 	if (bias_f!=NULL && bias) {
 		if (verbose) printf("Storing bias vector in %s\n",bias_f);
-		fb_matwrite(bias_f,ncomps,bias);
+		if (doublewrite)
+			fb_matwrite_double(bias_f,ncomps,bias);
+		else
+			fb_matwrite(bias_f,ncomps,bias);
 	}
-	
+
 	if (sign_f!=NULL && signs) {
 		if (verbose) printf("Storing sign vector in %s\n",sign_f);
 		for (i=0 ; i<ncomps ; i++) signs[i] = (signs[i]) ? (-1) : 1;
@@ -862,7 +833,10 @@ void doit(key *keys) {
 #endif
 
 	if (verbose) printf("Storing sphering matrix in %s\n",sphere_f);
-	fb_matwrite(sphere_f,chans*chans,sphere);
+	if (doublewrite)
+		fb_matwrite_double(sphere_f,chans*chans,sphere);
+	else
+		fb_matwrite(sphere_f,chans*chans,sphere);
 
 #ifdef MMAP
 	if (dataA) mapfree(dataA,ncomps*datalength*sizeof(doublereal));
