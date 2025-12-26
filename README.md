@@ -22,12 +22,22 @@ Enhanced for cross-platform reproducibility and 64-bit precision
 make -f Makefile.darwin  # macOS
 # or
 make -f Makefile.linux   # Linux
+# or
+make -f Makefile.windows # Windows
 
 # Run ICA
-./ica_darwin < config.sc
+./ica_darwin < config.sc         # macOS
+# or
+./ica_linux < config.sc          # Linux
+# or
+./ica_windows.exe < config.sc    # Windows
 
-# Run full pipeline (ICA + MATLAB visualization)
-./scripts/run_ica_and_plot.sh ./data/eeglab_data 32 30504
+# Run full pipeline (automated)
+./run_ica_and_plot.sh ./data/eeglab_data 32 30504  # Unix/macOS (includes MATLAB plotting)
+# or
+run_ica_windows.bat data\eeglab_data 32 30504      # Windows (Batch)
+# or
+.\run_ica_windows.ps1 data\eeglab_data 32 30504    # Windows (PowerShell)
 ```
 
 ## Software Requirements
@@ -43,6 +53,7 @@ make -f Makefile.linux   # Linux
 **Recommended BLAS implementations:**
 - **macOS:** Apple Accelerate framework (included)
 - **Linux:** OpenBLAS, Intel MKL, or ATLAS
+- **Windows:** OpenBLAS (precompiled version included in `openblas_win/`)
 - **Performance note:** Hardware-optimized BLAS implementations can increase execution speed by 400-500%
 
 Public domain BLAS/LAPACK available from [NETLIB](http://www.netlib.org/clapack/)
@@ -130,6 +141,45 @@ stop           1.0e-6
 maxsteps       512
 ```
 
+## Running ICA
+
+### Quick Run (Automated Scripts)
+
+**Windows (Batch):**
+```batch
+run_ica_windows.bat data\eeglab_data 32 30504
+```
+
+**Windows (PowerShell):**
+```powershell
+.\run_ica_windows.ps1 data\eeglab_data 32 30504
+```
+
+**Unix/macOS:**
+```bash
+./run_ica_and_plot.sh ./data/eeglab_data 32 30504
+```
+
+These scripts will:
+1. Create an ICA configuration file
+2. Run the ICA analysis
+3. Generate weights and sphere matrices
+
+### Manual Run
+
+**Windows:**
+```batch
+# Create or edit your configuration file (e.g., config.sc)
+# Then run:
+ica_windows.exe < config.sc
+```
+
+**Unix/macOS:**
+```bash
+./ica_darwin < config.sc  # macOS
+./ica_linux < config.sc   # Linux
+```
+
 ## Building from Source
 
 When compiling for different platforms, always clean between builds.
@@ -151,6 +201,27 @@ make -f Makefile.darwin
 make -f Makefile.linux clean
 make -f Makefile.linux
 ```
+
+### Windows
+
+```bash
+# Using WinLibs MinGW-w64 and OpenBLAS (preinstalled in this repository)
+# Add MinGW-w64 GCC to your PATH, then:
+make -f Makefile.windows clean
+make -f Makefile.windows
+```
+
+**Requirements:**
+- MinGW-w64 GCC compiler (recommended: WinLibs via winget)
+- OpenBLAS library (included in `openblas_win/` directory)
+
+**Installation (first time only):**
+```bash
+# Install WinLibs MinGW-w64 using Windows Package Manager
+winget install --id BrechtSanders.WinLibs.MCF.UCRT
+```
+
+**Important:** The `libopenblas.dll` file must be in the same directory as `ica_windows.exe` or in your system PATH. The Makefile automatically copies it to the root directory after compilation.
 
 ### Expanse supercomputer (Rocky Linux)
 

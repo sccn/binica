@@ -1,0 +1,68 @@
+# Makefile for binica - Windows platform
+# Uses MinGW-w64 GCC compiler and OpenBLAS library
+
+# Directories
+SRCDIR    = src
+INCDIR    = include
+OBJDIR    = obj
+OPENBLAS  = openblas_win
+
+# Compiler and flags
+CC        = gcc
+CFLAGS    = -O3 -I$(INCDIR) -I$(OPENBLAS)/include
+LIBS      = -L$(OPENBLAS) -lopenblas -lm
+
+# Source files
+SRCS      = $(SRCDIR)/ica.c $(SRCDIR)/interfc.c $(SRCDIR)/memap.c \
+            $(SRCDIR)/r250.c $(SRCDIR)/randlcg.c $(SRCDIR)/dsum.c
+
+# Object files (in obj/ directory)
+OBJS      = $(OBJDIR)/ica.o $(OBJDIR)/interfc.o $(OBJDIR)/memap.o \
+            $(OBJDIR)/r250.o $(OBJDIR)/randlcg.o $(OBJDIR)/dsum.o
+
+# Headers
+HEADERS   = $(INCDIR)/ica.h $(INCDIR)/memap.h $(INCDIR)/r250.h $(INCDIR)/randlcg.h
+
+# Target executable (at root)
+TARGET    = ica_windows.exe
+
+# Default target
+all: $(OBJDIR) $(TARGET)
+
+# Create obj directory if it doesn't exist
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
+
+# Link executable
+$(TARGET): $(OBJS)
+	$(CC) -o $(TARGET) $(OBJS) $(LIBS)
+	@echo "Build successful! Don't forget to add openblas_win to your PATH or copy libopenblas.dll to the same directory as the executable."
+
+# Compile source files
+$(OBJDIR)/ica.o: $(SRCDIR)/ica.c $(INCDIR)/ica.h $(INCDIR)/memap.h $(INCDIR)/r250.h
+	$(CC) -c $(SRCDIR)/ica.c -o $(OBJDIR)/ica.o $(CFLAGS)
+
+$(OBJDIR)/interfc.o: $(SRCDIR)/interfc.c $(INCDIR)/ica.h $(INCDIR)/memap.h
+	$(CC) -c $(SRCDIR)/interfc.c -o $(OBJDIR)/interfc.o $(CFLAGS)
+
+$(OBJDIR)/memap.o: $(SRCDIR)/memap.c $(INCDIR)/memap.h
+	$(CC) -c $(SRCDIR)/memap.c -o $(OBJDIR)/memap.o $(CFLAGS)
+
+$(OBJDIR)/r250.o: $(SRCDIR)/r250.c $(INCDIR)/r250.h $(INCDIR)/randlcg.h
+	$(CC) -c $(SRCDIR)/r250.c -o $(OBJDIR)/r250.o $(CFLAGS)
+
+$(OBJDIR)/randlcg.o: $(SRCDIR)/randlcg.c $(INCDIR)/randlcg.h
+	$(CC) -c $(SRCDIR)/randlcg.c -o $(OBJDIR)/randlcg.o $(CFLAGS)
+
+$(OBJDIR)/dsum.o: $(SRCDIR)/dsum.c
+	$(CC) -c $(SRCDIR)/dsum.c -o $(OBJDIR)/dsum.o $(CFLAGS)
+
+# Clean build artifacts
+clean:
+	rm -f $(OBJDIR)/*.o $(TARGET)
+
+# Clean everything including directories
+distclean: clean
+	rm -rf $(OBJDIR)
+
+.PHONY: all clean distclean

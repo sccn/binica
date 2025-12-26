@@ -1,10 +1,10 @@
 # ICA configuration for eeglab_data
-DataFile       ./data/eeglab_data.fdt
+DataFile       data\eeglab_data.fdt
 chans          32
 datalength     30504
 
-WeightsOutFile ./data/eeglab_data.wts_darwin
-SphereFile     ./data/eeglab_data.sph_darwin
+WeightsOutFile data\eeglab_data.wts_windows
+SphereFile     data\eeglab_data.sph_windows
 
 # Reproducibility
 seed           1

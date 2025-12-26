@@ -37,6 +37,7 @@ data/eeglab_data_with_ica.set
 *.log
 *.tmp
 bias_after_adjust
+openblas_win
 
 # IDE files
 .vscode/

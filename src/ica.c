@@ -560,7 +560,7 @@ void posact(doublereal *data, doublereal *trsf, integer m, integer n, doublereal
 }
 
 
-void sigproc()
+void sigproc(int sig)
 {
   doublereal *sph = (doublereal*)malloc(CH_NUMBER*CH_NUMBER*sizeof(doublereal));
   printf("number of components = %d\n",COMP_NUMBER);
