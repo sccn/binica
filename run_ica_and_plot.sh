@@ -6,6 +6,20 @@
 
 set -e  # Exit on error
 
+# Detect platform
+PLATFORM=$(uname -s)
+if [ "$PLATFORM" = "Darwin" ]; then
+    ICA_BIN="./ica_darwin"
+    MATLAB_BIN="/Applications/MATLAB_R2025b.app/bin/matlab"
+    EEGLAB_PATH="~/eeglab"
+    SUFFIX="_darwin"
+else
+    ICA_BIN="./ica_linux"
+    MATLAB_BIN="/usr/local/bin/matlab"
+    EEGLAB_PATH="~/v1/eeglab"
+    SUFFIX="_linux"
+fi
+
 # Default parameters
 DATASET=${1:-"./data/eeglab_data"}
 NCHANS=${2:-32}
@@ -14,8 +28,8 @@ NPOINTS=${3:-30504}
 # Derived paths
 DATAFILE="${DATASET}.fdt"
 SETFILE="${DATASET}.set"
-WTSFILE="${DATASET}.wts"
-SPHFILE="${DATASET}.sph"
+WTSFILE="${DATASET}.wts${SUFFIX}"
+SPHFILE="${DATASET}.sph${SUFFIX}"
 CONFIGFILE="${DATASET}_ica.sc"
 BASENAME=$(basename "$DATASET")
 
@@ -56,10 +70,10 @@ echo ""
 
 # Run binica ICA
 echo "Running binica ICA..."
-echo "Command: ./ica_darwin < $CONFIGFILE"
+echo "Command: $ICA_BIN < $CONFIGFILE"
 echo ""
 
-./ica_darwin < "$CONFIGFILE"
+$ICA_BIN < "$CONFIGFILE"
 
 if [ $? -ne 0 ]; then
     echo "Error: ICA failed"
@@ -72,9 +86,15 @@ echo "  Weights: $WTSFILE"
 echo "  Sphere:  $SPHFILE"
 echo ""
 
+# Only plot on Darwin
+if [ "$PLATFORM" != "Darwin" ]; then
+    echo "Skipping topography plotting (only available on macOS)"
+    exit 0
+fi
+
 # Check if MATLAB and EEGLAB are available
-if [ ! -d "/Applications/MATLAB_R2025b.app" ]; then
-    echo "Warning: MATLAB not found at /Applications/MATLAB_R2025b.app"
+if [ ! -x "$MATLAB_BIN" ]; then
+    echo "Warning: MATLAB not found at $MATLAB_BIN"
     echo "Skipping topography plotting"
     exit 0
 fi
@@ -94,7 +114,7 @@ echo "Creating MATLAB plotting script..."
 cat > "$MATLABSCRIPT" << EOFMATLAB
 % Auto-generated script to plot ICA topographies
 
-addpath('~/eeglab');
+addpath('$EEGLAB_PATH');
 eeglab nogui;
 
 % Load dataset
@@ -148,7 +168,7 @@ echo ""
 # Run MATLAB
 echo "Running MATLAB to generate topography plots..."
 FULLPATH=$(cd "$(dirname "${MATLABSCRIPT}")" && pwd)/$(basename "${MATLABSCRIPT}")
-/Applications/MATLAB_R2025b.app/bin/matlab -batch "cd('$(pwd)'); run('${FULLPATH}')"
+$MATLAB_BIN -batch "cd('$(pwd)'); run('${FULLPATH}')"
 
 if [ $? -eq 0 ]; then
     echo ""

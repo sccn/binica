@@ -547,8 +547,10 @@ void doit(key *keys) {
 			if (window[BASELINE] <= 0) error("Length of baseline must be positive");
 		}
 #endif
-		else
+		else {
+			fprintf(stderr, "Unknown keyword: '%s'\n", keyword);
 			error("unknown flag");
+		}
 	}
 
 

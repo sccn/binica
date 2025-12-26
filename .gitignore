@@ -2,5 +2,7 @@
 bias_after_adjust
 ica_darwin
 old/
+*.so
+*.log
 *.o
 data/*
