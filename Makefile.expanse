@@ -1,0 +1,31 @@
+PLAT = _expanse
+
+CC        = gcc
+CFLAGS    = -O3
+# Use system BLAS/LAPACK libraries instead of CLAPACK
+LIBS      = -L. -L/usr/lib/x86_64-linux-gnu -lopenblas -lgfortran -lm
+OBJS      = ica.o interfc.o memap.o r250.o randlcg.o dsum.o
+
+ica_expanse: Makefile.expanse ica.h memap.h $(OBJS)
+	$(CC) -o ica_expanse $(OBJS) $(LIBS)
+
+ica.o: Makefile.expanse ica.h memap.h ica.c
+	$(CC) -c ica.c $(CFLAGS)
+
+interfc.o: Makefile.expanse ica.h memap.h interfc.c
+	$(CC) -c interfc.c $(CFLAGS)
+
+memap.o: Makefile.expanse memap.h memap.c
+	$(CC) -c memap.c $(CFLAGS)
+
+r250.o: Makefile.expanse r250.h r250.c
+	$(CC) -c r250.c $(CFLAGS)
+
+randlcg.o: Makefile.expanse randlcg.h randlcg.c
+	$(CC) -c randlcg.c $(CFLAGS)
+
+dsum.o: Makefile.expanse dsum.c
+	$(CC) -c dsum.c $(CFLAGS)
+
+clean:
+	rm -f *.o
