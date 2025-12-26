@@ -75,7 +75,8 @@ void initdefaults () {
 	nochange   = DEFAULT_STOP;
 	momentum   = DEFAULT_MOMENTUM;
 	maxsteps   = DEFAULT_MAXSTEPS;
-	
+	rngseed    = 1;
+
 	extended   = DEFAULT_EXTENDED;
 	extblocks  = DEFAULT_EXTBLOCKS;
 	pdfsize    = MAX_PDFSIZE;
@@ -458,6 +459,13 @@ void doit(key *keys) {
 				maxsteps = atoi(value);
 				if (maxsteps < 0)
 					error("maxsteps value must be a positive integer");
+		}
+
+/* Keyword: seed */
+		else if (!strcmp(keyword,"seed") || !strcmp(keyword,"rngseed")) {
+				rngseed = atoi(value);
+				if (rngseed <= 0)
+					error("seed value must be a positive integer");
 		}
 
 /* Keywords: anneal, annealstep */

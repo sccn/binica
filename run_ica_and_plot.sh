@@ -58,6 +58,7 @@ datalength     $NPOINTS
 WeightsOutFile $WTSFILE
 SphereFile     $SPHFILE
 
+seed           1
 doublewrite    on
 extended       1
 lrate          5.0e-4
@@ -123,8 +124,8 @@ EEG = pop_loadset('filename', '${BASENAME}.set', 'filepath', '${DATADIR}/');
 
 % Load ICA matrices
 fprintf('Loading ICA matrices...\\n');
-wtsfile = fullfile('${DATADIR}', '${BASENAME}.wts');
-sphfile = fullfile('${DATADIR}', '${BASENAME}.sph');
+wtsfile = fullfile('${DATADIR}', '${BASENAME}.wts_${PLATFORM}');
+sphfile = fullfile('${DATADIR}', '${BASENAME}.sph_${PLATFORM}');
 
 fid = fopen(wtsfile, 'rb');
 weights = fread(fid, [${NCHANS}, ${NCHANS}], 'float64')';

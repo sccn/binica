@@ -25,6 +25,7 @@
 /* Global and externally accessible variables */
 integer extended, extblocks, pdfsize, nsub;
 integer verbose, block, maxsteps;
+integer rngseed;
 
 doublereal lrate, annealstep, annealdeg, nochange, momentum;
 
@@ -706,8 +707,8 @@ signal(SIGINT,sigproc);
 		else printf("\n");
 	}
 
-#ifdef FIX_SEED	
-	SRAND(1);
+#ifdef FIX_SEED
+	SRAND(rngseed);
 #else
 	SRAND((int)time(NULL));
 #endif

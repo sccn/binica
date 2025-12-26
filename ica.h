@@ -95,7 +95,8 @@
 #define EOL 0x0A
 /* Fixing the seed causes multiple runs of a given */
 /* configuration to yield identical results */
-/* #define FIX_SEED */
+/* Default: use fixed seed for reproducibility */
+#define FIX_SEED
 
 #ifdef R250
 #define SRAND(seed) r250_init(seed)
@@ -117,6 +118,7 @@ typedef struct {
 
 extern integer extended, extblocks, pdfsize, nsub;
 extern integer verbose, block, maxsteps;
+extern integer rngseed;
 
 extern doublereal lrate, annealstep, annealdeg, nochange, momentum;
 
