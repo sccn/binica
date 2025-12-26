@@ -1,8 +1,51 @@
-.venv/
-bias_after_adjust
+# Compiled binaries
 ica_darwin
-old/
-*.so
-*.log
+ica_linux
+ica
+
+# Object files
 *.o
-data/*
+obj/
+
+# Backup files
+*~
+*.bak
+*.swp
+*.swo
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# MATLAB
+*.asv
+
+# Data files (optional - uncomment to ignore)
+# data/*.fdt
+# data/*.wts
+# data/*.sph
+# data/*.png
+# data/*.pdf
+data/test*
+data/*.png
+data/*.pdf
+data/eeglab_data_with_ica.set
+
+# Temporary files
+*.log
+*.tmp
+bias_after_adjust
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# macOS
+.DS_Store
+._*
+
+# Old files
+old/

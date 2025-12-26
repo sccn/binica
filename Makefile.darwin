@@ -1,30 +1,74 @@
-PLAT = _darwin
+# Makefile for binica - Darwin (macOS) platform
+# Uses Apple Accelerate framework for BLAS/LAPACK
 
+# Directories
+SRCDIR    = src
+INCDIR    = include
+OBJDIR    = obj
+
+# Compiler and flags
 CC        = gcc
-CFLAGS    = -O3
+CFLAGS    = -O3 -I$(INCDIR)
 LIBS      = -framework Accelerate -lm
-OBJS      = ica.o interfc.o memap.o r250.o randlcg.o dsum.o
 
-ica_darwin: Makefile.darwin ica.h memap.h $(OBJS)
-	$(CC) -o ica_darwin $(OBJS) $(LIBS)
+# Source files
+SRCS      = $(SRCDIR)/ica.c $(SRCDIR)/interfc.c $(SRCDIR)/memap.c \
+            $(SRCDIR)/r250.c $(SRCDIR)/randlcg.c $(SRCDIR)/dsum.c
 
-ica.o: Makefile.darwin ica.h memap.h ica.c
-	$(CC) -c ica.c $(CFLAGS)
+# Object files (in obj/ directory)
+OBJS      = $(OBJDIR)/ica.o $(OBJDIR)/interfc.o $(OBJDIR)/memap.o \
+            $(OBJDIR)/r250.o $(OBJDIR)/randlcg.o $(OBJDIR)/dsum.o
 
-interfc.o: Makefile.darwin ica.h memap.h interfc.c
-	$(CC) -c interfc.c $(CFLAGS)
+# Headers
+HEADERS   = $(INCDIR)/ica.h $(INCDIR)/memap.h $(INCDIR)/r250.h $(INCDIR)/randlcg.h
 
-memap.o: Makefile.darwin memap.h memap.c
-	$(CC) -c memap.c $(CFLAGS)
+# Target executable (at root)
+TARGET    = ica_darwin
 
-r250.o: Makefile.darwin r250.h r250.c
-	$(CC) -c r250.c $(CFLAGS)
+# Default target
+all: $(OBJDIR) $(TARGET)
 
-randlcg.o: Makefile.darwin randlcg.h randlcg.c
-	$(CC) -c randlcg.c $(CFLAGS)
+# Create obj directory if it doesn't exist
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
-dsum.o: Makefile.darwin dsum.c
-	$(CC) -c dsum.c $(CFLAGS)
+# Link executable
+$(TARGET): $(OBJS)
+	$(CC) -o $(TARGET) $(OBJS) $(LIBS)
 
+# Compile source files
+$(OBJDIR)/ica.o: $(SRCDIR)/ica.c $(INCDIR)/ica.h $(INCDIR)/memap.h $(INCDIR)/r250.h
+	$(CC) -c $(SRCDIR)/ica.c -o $(OBJDIR)/ica.o $(CFLAGS)
+
+$(OBJDIR)/interfc.o: $(SRCDIR)/interfc.c $(INCDIR)/ica.h $(INCDIR)/memap.h
+	$(CC) -c $(SRCDIR)/interfc.c -o $(OBJDIR)/interfc.o $(CFLAGS)
+
+$(OBJDIR)/memap.o: $(SRCDIR)/memap.c $(INCDIR)/memap.h
+	$(CC) -c $(SRCDIR)/memap.c -o $(OBJDIR)/memap.o $(CFLAGS)
+
+$(OBJDIR)/r250.o: $(SRCDIR)/r250.c $(INCDIR)/r250.h $(INCDIR)/randlcg.h
+	$(CC) -c $(SRCDIR)/r250.c -o $(OBJDIR)/r250.o $(CFLAGS)
+
+$(OBJDIR)/randlcg.o: $(SRCDIR)/randlcg.c $(INCDIR)/randlcg.h
+	$(CC) -c $(SRCDIR)/randlcg.c -o $(OBJDIR)/randlcg.o $(CFLAGS)
+
+$(OBJDIR)/dsum.o: $(SRCDIR)/dsum.c
+	$(CC) -c $(SRCDIR)/dsum.c -o $(OBJDIR)/dsum.o $(CFLAGS)
+
+# Clean build artifacts
 clean:
-	rm -f *.o ica_darwin
+	rm -f $(OBJDIR)/*.o $(TARGET)
+
+# Clean everything including directories
+distclean: clean
+	rm -rf $(OBJDIR)
+
+# Install (optional)
+install: $(TARGET)
+	cp $(TARGET) /usr/local/bin/
+
+# Uninstall (optional)
+uninstall:
+	rm -f /usr/local/bin/$(TARGET)
+
+.PHONY: all clean distclean install uninstall

@@ -24,8 +24,8 @@ else
     fi
 fi
 ICA_BIN="./ica${SUFFIX}"
-MATLAB_BIN="/usr/local/bin/matlab"
-EEGLAB_PATH="~/v1/eeglab"
+MATLAB_BIN="/Applications/MATLAB_R2025b.app/bin/matlab"
+EEGLAB_PATH="~/eeglab"
 
 # Default parameters
 DATASET=${1:-"./data/eeglab_data"}
@@ -106,7 +106,7 @@ echo "  Sphere:  $SPHFILE"
 echo ""
 
 # Only plot on Darwin
-if [ "$PLATFORM" != "Darwin" ]; then
+if [ "$PLATFORM" != "MacBook-Pro-10" ]; then
     echo "Skipping topography plotting (only available on macOS)"
     exit 0
 fi
@@ -142,14 +142,22 @@ EEG = pop_loadset('filename', '${BASENAME}.set', 'filepath', '${DATADIR}/');
 
 % Load ICA matrices
 fprintf('Loading ICA matrices...\\n');
-wtsfile = fullfile('${DATADIR}', '${BASENAME}.wts_${PLATFORM}');
-sphfile = fullfile('${DATADIR}', '${BASENAME}.sph_${PLATFORM}');
+wtsfile = fullfile('${DATADIR}', '${BASENAME}.wts${SUFFIX}');
+sphfile = fullfile('${DATADIR}', '${BASENAME}.sph${SUFFIX}');
 
+% Read weights matrix
 fid = fopen(wtsfile, 'rb');
+if fid == -1
+    error('Cannot open weights file: %s', wtsfile);
+end
 weights = fread(fid, [${NCHANS}, ${NCHANS}], 'float64')';
 fclose(fid);
 
+% Read sphere matrix
 fid = fopen(sphfile, 'rb');
+if fid == -1
+    error('Cannot open sphere file: %s', sphfile);
+end
 sphere = fread(fid, [${NCHANS}, ${NCHANS}], 'float64')';
 fclose(fid);
 
