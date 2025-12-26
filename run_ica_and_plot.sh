@@ -7,18 +7,25 @@
 set -e  # Exit on error
 
 # Detect platform
-PLATFORM=$(uname -s)
-if [ "$PLATFORM" = "Darwin" ]; then
-    ICA_BIN="./ica_darwin"
-    MATLAB_BIN="/Applications/MATLAB_R2025b.app/bin/matlab"
-    EEGLAB_PATH="~/eeglab"
+if [[ -n "$SLURM_CLUSTER_NAME" ]]; then
+    PLATFORM="$SLURM_CLUSTER_NAME"
+else
+    PLATFORM="$(hostname -s)"
+fi
+
+echo "$PLATFORM"
+if [ "$PLATFORM" = "MacBook-Pro-10" ]; then
     SUFFIX="_darwin"
 else
-    ICA_BIN="./ica_linux"
-    MATLAB_BIN="/usr/local/bin/matlab"
-    EEGLAB_PATH="~/v1/eeglab"
-    SUFFIX="_linux"
+    if [ "$PLATFORM" = "expanse" ]; then
+        SUFFIX="_expanse"
+    else
+        SUFFIX="_linux"
+    fi
 fi
+ICA_BIN="./ica${SUFFIX}"
+MATLAB_BIN="/usr/local/bin/matlab"
+EEGLAB_PATH="~/v1/eeglab"
 
 # Default parameters
 DATASET=${1:-"./data/eeglab_data"}
@@ -58,9 +65,20 @@ datalength     $NPOINTS
 WeightsOutFile $WTSFILE
 SphereFile     $SPHFILE
 
+# Reproducibility
 seed           1
+
+# Precision
 doublewrite    on
+
+# Extended ICA options:
+# extended 0   = Standard logistic ICA (no extended)
+# extended 1   = Extended ICA, auto-detect sub/super-Gaussian (recommended)
+# extended N   = Extended ICA, calculate PDF every N blocks
+# extended -N  = Extended ICA, assume exactly N sub-Gaussian components
 extended       1
+
+# Learning parameters
 lrate          5.0e-4
 stop           1.0e-6
 maxsteps       512
